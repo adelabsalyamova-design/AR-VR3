@@ -13,6 +13,8 @@ const SPACE = new URLSearchParams(location.search).get("space") === "local-floor
 const ANCHORS_ALLOWED = new URLSearchParams(location.search).get("anchors") !== "off";
 const GREEN = 0x00e676;
 const RED = 0xff3b30;
+const RENDER_SCALE = 0.8;
+const OVERLAY_INTERVAL = 250;
 
 let btn, gl, glCanvas, camera, scene, renderer, controller, reticle, productTemplate;
 let overlay, panel, statusEl, warningEl, logEl, fallbackEl;
@@ -29,7 +31,7 @@ const placed = [];
 
 let sessionStartTime = 0, startPoseLogged = false, firstHitLogged = false;
 const logLines = [];
-let lastStatus = "";
+let lastStatus = "", lastWarning = "", lastOverlayTime = 0;
 
 const _pos = new THREE.Vector3();
 const _quat = new THREE.Quaternion();
@@ -49,7 +51,7 @@ function loadScene() {
 
   // newer three.js needs a WebGL2 context
   glCanvas = document.createElement("canvas");
-  gl = glCanvas.getContext("webgl2", { alpha: true, antialias: true, xrCompatible: true });
+  gl = glCanvas.getContext("webgl2", { alpha: true, antialias: false, xrCompatible: true });
   if (!gl) {
     showFallback("WebGL 2 is not available in this browser, so the AR view cannot be drawn.");
     return;
@@ -63,10 +65,11 @@ function loadScene() {
   sun.position.set(1, 3, 2);
   scene.add(sun);
 
-  renderer = new THREE.WebGLRenderer({ canvas: glCanvas, context: gl, alpha: true, antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer = new THREE.WebGLRenderer({ canvas: glCanvas, context: gl, alpha: true, antialias: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
+  renderer.xr.setFramebufferScaleFactor(RENDER_SCALE);
   Object.assign(renderer.domElement.style, { position: "fixed", top: "0", left: "0", zIndex: "-1", pointerEvents: "none" });
   document.body.appendChild(renderer.domElement);
   window.addEventListener("resize", () => {
@@ -96,7 +99,7 @@ function loadScene() {
   document.getElementById("clear").addEventListener("click", clearPlaced);
   document.getElementById("logbtn").addEventListener("click", () => { logRequested = true; });
 
-  updateOverlay();
+  updateOverlay(true);
 
   if (!navigator.xr) {
     showFallback("WebXR is not available here. Open this page in Chrome on an ARCore Android phone (or the Quest 3 browser) over HTTPS or localhost.");
@@ -149,7 +152,7 @@ function checkProductSize() {
 async function onRequestSession() {
   btn.disabled = true;
   sessionState = "starting...";
-  updateOverlay();
+  updateOverlay(true);
   try {
     const session = await navigator.xr.requestSession("immersive-ar", {
       requiredFeatures: ["hit-test"],
@@ -343,10 +346,14 @@ function onSessionEnd() {
   sessionState = "ended";
   btn.textContent = "START AR";
   btn.disabled = false;
-  updateOverlay();
+  updateOverlay(true);
 }
 
-function updateOverlay() {
+function updateOverlay(force) {
+  const now = performance.now();
+  if (!force && now - lastOverlayTime < OVERLAY_INTERVAL) return;
+  lastOverlayTime = now;
+
   const lines = [
     `${VARIANT.studentId} · ${VARIANT.product} · ${VARIANT.maxProducts === 1 ? "single" : "multi"} · ${VARIANT.tiltToleranceDeg}° · ${VARIANT.faceUser ? "faces user" : "keeps hit orientation"}`,
     `Session: ${sessionState}`,
@@ -358,7 +365,12 @@ function updateOverlay() {
     lastStatus = lines;
     statusEl.textContent = lines;
   }
-  warningEl.textContent = xrSession && trackingLost ? "Tracking lost, move the phone slowly" : "";
+
+  const warning = xrSession && trackingLost ? "Tracking lost, move the phone slowly" : "";
+  if (warning !== lastWarning) {
+    lastWarning = warning;
+    warningEl.textContent = warning;
+  }
 }
 
 function showFallback(message) {
