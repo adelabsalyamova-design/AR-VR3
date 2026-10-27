@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PA3 – AR Hit-Testing – 241418</title>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js" } }
+</script>
+<style>
+  html, body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; color: #1b1d21; }
+  header { padding: 16px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  #variant { margin: 0; color: #444; font-size: 14px; }
+  #fallback { margin: 12px 0 0; padding: 12px; background: #fde8e8; border: 1px solid #e53935;
+              border-radius: 8px; color: #7f1d1d; }
+  #fallback[hidden] { display: none; }
+
+  #panel { position: fixed; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 10px 12px;
+           background: rgba(20, 22, 26, 0.82); color: #fff; font-size: 14px; }
+  #status { white-space: pre-line; line-height: 1.45; }
+  #warning { color: #ffb4a8; font-weight: 600; min-height: 1.3em; }
+  #buttons { display: flex; gap: 8px; margin-top: 8px; }
+  button { flex: 1; min-height: 44px; border: 0; border-radius: 8px; font-size: 15px; font-weight: 600; }
+  #arbtn { background: #00e676; color: #06210f; }
+  #clear, #logbtn { background: #3a3f48; color: #fff; }
+  button:disabled { opacity: 0.5; }
+  #log { margin: 8px 0 0; max-height: 120px; overflow: hidden; white-space: pre-wrap; word-break: break-all;
+         font: 11px/1.3 ui-monospace, monospace; color: #9ee7b5; }
+  #log:empty { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AR product preview – 241418 – Floor speaker</h1>
+  <p id="variant">Variant 241418: floor speaker · single mode · 12° surface tolerance · keeps hit-pose orientation</p>
+  <p id="fallback" hidden></p>
+</header>
+
+<div id="overlay">
+  <div id="panel">
+    <div id="status"></div>
+    <div id="warning"></div>
+    <div id="buttons">
+      <button id="arbtn" hidden>START AR</button>
+      <button id="clear">Clear</button>
+      <button id="logbtn">Log</button>
+    </div>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script type="module" src="index.js"></script>
+</body>
+</html>
